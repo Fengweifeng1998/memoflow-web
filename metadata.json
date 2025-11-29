@@ -1,0 +1,5 @@
+{
+  "name": "MemoFlow",
+  "description": "A minimalist, offline-first note-taking app inspired by Flomo. Features instant capture, daily reviews, and AI-powered insights.",
+  "requestFramePermissions": []
+}
