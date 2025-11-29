@@ -9,7 +9,8 @@ export default defineConfig(({ mode }) => {
       outDir: 'dist',
     },
     define: {
-      'process.env.API_KEY': JSON.stringify(env.API_KEY)
+      // Fallback to empty string to ensure valid JS generation if env var is missing
+      'process.env.API_KEY': JSON.stringify(env.API_KEY || '')
     }
   };
 });
