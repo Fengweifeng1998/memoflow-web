@@ -41,6 +41,11 @@ export const deleteNote = (id: string): void => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
 };
 
+// New function to handle imports
+export const importNotes = (newNotes: Note[]): void => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(newNotes));
+};
+
 export const getStats = (): Stats => {
   const notes = getNotes();
   const tags = new Set<string>();

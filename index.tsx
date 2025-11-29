@@ -3,9 +3,9 @@ import { createRoot } from 'react-dom/client';
 import { format, isToday, isYesterday } from 'date-fns';
 import { 
   Send, Menu, X, BarChart2, MessageSquare, Hash, 
-  Search, Grid, Feather, ChevronDown 
+  Search, Grid, Feather, ChevronDown, Download, Upload, Settings
 } from 'lucide-react';
-import { getNotes, saveNote, updateNote, deleteNote, getStats } from './services/storageService';
+import { getNotes, saveNote, updateNote, deleteNote, getStats, importNotes } from './services/storageService';
 import { Note, Stats } from './types';
 import NoteCard from './components/NoteCard';
 import Heatmap from './components/Heatmap';
@@ -24,6 +24,7 @@ const App = () => {
   const [inputValue, setInputValue] = useState('');
   const desktopInputRef = useRef<HTMLTextAreaElement>(null);
   const mobileInputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load initial data
   useEffect(() => {
@@ -71,6 +72,52 @@ const App = () => {
     setInputValue(e.target.value);
     e.target.style.height = 'auto';
     e.target.style.height = e.target.scrollHeight + 'px';
+  };
+
+  // Data Management
+  const handleExport = () => {
+    const dataStr = JSON.stringify(notes, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `memoflow_backup_${format(new Date(), 'yyyyMMdd_HHmm')}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const content = event.target?.result as string;
+        const importedData = JSON.parse(content);
+        if (Array.isArray(importedData)) {
+          if (confirm(`Replace current notes with ${importedData.length} notes from backup? This cannot be undone.`)) {
+            importNotes(importedData);
+            refreshData();
+            alert('Import successful!');
+            setSidebarOpen(false);
+          }
+        } else {
+          alert('Invalid backup file format.');
+        }
+      } catch (err) {
+        alert('Failed to parse backup file.');
+        console.error(err);
+      }
+    };
+    reader.readAsText(file);
+    // Reset input so same file can be selected again
+    e.target.value = '';
   };
 
   // Filter Logic
@@ -169,13 +216,40 @@ const App = () => {
             <span className="truncate">#{tag}</span>
           </button>
         ))}
+
+        <div className="pt-6 pb-2 px-4 text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+          <Settings size={12} /> Data
+        </div>
+        
+        <button 
+          onClick={handleExport}
+          className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-200/50 transition-colors"
+        >
+          <Download size={16} />
+          Export Backup
+        </button>
+        <button 
+          onClick={handleImportClick}
+          className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-200/50 transition-colors"
+        >
+          <Upload size={16} />
+          Import Backup
+        </button>
+        {/* Hidden File Input */}
+        <input 
+          type="file" 
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept=".json"
+          className="hidden" 
+        />
       </nav>
 
       {/* Desktop Promo / Footer */}
       <div className="p-4 border-t border-gray-100">
         <div className="bg-gradient-to-br from-emerald-50 to-teal-50 p-3 rounded-lg border border-emerald-100">
-           <p className="text-xs text-emerald-800 font-medium mb-1">MemoFlow Pro</p>
-           <p className="text-[10px] text-emerald-600/80">Sync across devices coming soon.</p>
+           <p className="text-xs text-emerald-800 font-medium mb-1">Local Mode</p>
+           <p className="text-[10px] text-emerald-600/80">Data is stored in your browser/device.</p>
         </div>
       </div>
     </div>
